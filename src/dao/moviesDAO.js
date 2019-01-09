@@ -1,8 +1,12 @@
-import { ObjectId } from "bson"
+import {
+  ObjectId
+} from "bson"
 
 let movies
 let mflix
-const DEFAULT_SORT = [["tomatoes.viewer.numReviews", -1]]
+const DEFAULT_SORT = [
+  ["tomatoes.viewer.numReviews", -1]
+]
 
 export default class MoviesDAO {
   static async injectDB(conn) {
@@ -26,9 +30,14 @@ export default class MoviesDAO {
    * @returns {Promise<ConfigurationResult>} An object with configuration details.
    */
   static async getConfiguration() {
-    const roleInfo = await mflix.command({ connectionStatus: 1 })
+    const roleInfo = await mflix.command({
+      connectionStatus: 1
+    })
     const authInfo = roleInfo.authInfo.authenticatedUserRoles[0]
-    const { poolSize, wtimeout } = movies.s.db.serverConfig.s.options
+    const {
+      poolSize,
+      wtimeout
+    } = movies.s.db.serverConfig.s.options
     let response = {
       poolSize,
       wtimeout,
@@ -59,7 +68,15 @@ export default class MoviesDAO {
       // TODO Ticket: Projection
       // Find movies matching the "countries" list, but only return the title
       // and _id.
-      cursor = await movies.find()
+      cursor = await movies
+        .find({
+          countries: {
+            $in: countries
+          }
+        })
+        .project({
+          title: 1
+        })
     } catch (e) {
       console.error(`Unable to issue find command, ${e}`)
       return []
@@ -74,12 +91,26 @@ export default class MoviesDAO {
    * @returns {QueryParams} The QueryParams for text search
    */
   static textSearchQuery(text) {
-    const query = { $text: { $search: text } }
-    const meta_score = { $meta: "textScore" }
-    const sort = [["score", meta_score]]
-    const project = { score: meta_score }
+    const query = {
+      $text: {
+        $search: text
+      }
+    }
+    const meta_score = {
+      $meta: "textScore"
+    }
+    const sort = [
+      ["score", meta_score]
+    ]
+    const project = {
+      score: meta_score
+    }
 
-    return { query, project, sort }
+    return {
+      query,
+      project,
+      sort
+    }
   }
 
   /**
@@ -90,11 +121,19 @@ export default class MoviesDAO {
   static castSearchQuery(cast) {
     const searchCast = Array.isArray(cast) ? cast : Array(cast)
 
-    const query = { cast: { $in: searchCast } }
+    const query = {
+      cast: {
+        $in: searchCast
+      }
+    }
     const project = {}
     const sort = DEFAULT_SORT
 
-    return { query, project, sort }
+    return {
+      query,
+      project,
+      sort
+    }
   }
 
   /**
@@ -118,7 +157,11 @@ export default class MoviesDAO {
     const project = {}
     const sort = DEFAULT_SORT
 
-    return { query, project, sort }
+    return {
+      query,
+      project,
+      sort
+    }
   }
 
   /**
@@ -137,44 +180,54 @@ export default class MoviesDAO {
     if (!filters || !filters.cast) {
       throw new Error("Must specify cast members to filter by.")
     }
-    const matchStage = { $match: filters }
-    const sortStage = { $sort: { "tomatoes.viewer.rating": -1 } }
-    const countingPipeline = [matchStage, sortStage, { $count: "count" }]
-    const skipStage = { $skip: moviesPerPage * page }
-    const limitStage = { $limit: moviesPerPage }
+    const matchStage = {
+      $match: filters
+    }
+    const sortStage = {
+      $sort: {
+        "tomatoes.viewer.rating": -1
+      }
+    }
+    const countingPipeline = [matchStage, sortStage, {
+      $count: "count"
+    }]
+    const skipStage = {
+      $skip: moviesPerPage * page
+    }
+    const limitStage = {
+      $limit: moviesPerPage
+    }
     const facetStage = {
       $facet: {
-        runtime: [
-          {
-            $bucket: {
-              groupBy: "$runtime",
-              boundaries: [0, 60, 90, 120, 180],
-              default: "other",
-              output: {
-                count: { $sum: 1 },
+        runtime: [{
+          $bucket: {
+            groupBy: "$runtime",
+            boundaries: [0, 60, 90, 120, 180],
+            default: "other",
+            output: {
+              count: {
+                $sum: 1
               },
             },
           },
-        ],
-        rating: [
-          {
-            $bucket: {
-              groupBy: "$metacritic",
-              boundaries: [0, 50, 70, 90, 100],
-              default: "other",
-              output: {
-                count: { $sum: 1 },
+        }, ],
+        rating: [{
+          $bucket: {
+            groupBy: "$metacritic",
+            boundaries: [0, 50, 70, 90, 100],
+            default: "other",
+            output: {
+              count: {
+                $sum: 1
               },
             },
           },
-        ],
-        movies: [
-          {
-            $addFields: {
-              title: "$title",
-            },
+        }, ],
+        movies: [{
+          $addFields: {
+            title: "$title",
           },
-        ],
+        }, ],
       },
     }
 
@@ -204,7 +257,9 @@ export default class MoviesDAO {
         ...count,
       }
     } catch (e) {
-      return { error: "Results too large, be more restrictive in filter" }
+      return {
+        error: "Results too large, be more restrictive in filter"
+      }
     }
   }
 
@@ -234,7 +289,9 @@ export default class MoviesDAO {
       }
     }
 
-    let { query = {}, project = {}, sort = DEFAULT_SORT } = queryParams
+    let {
+      query = {}, project = {}, sort = DEFAULT_SORT
+    } = queryParams
     let cursor
     try {
       cursor = await movies
@@ -243,7 +300,10 @@ export default class MoviesDAO {
         .sort(sort)
     } catch (e) {
       console.error(`Unable to issue find command, ${e}`)
-      return { moviesList: [], totalNumMovies: 0 }
+      return {
+        moviesList: [],
+        totalNumMovies: 0
+      }
     }
 
     /**
@@ -263,12 +323,18 @@ export default class MoviesDAO {
       const moviesList = await displayCursor.toArray()
       const totalNumMovies = page === 0 ? await movies.countDocuments(query) : 0
 
-      return { moviesList, totalNumMovies }
+      return {
+        moviesList,
+        totalNumMovies
+      }
     } catch (e) {
       console.error(
         `Unable to convert cursor to array or problem counting documents, ${e}`,
       )
-      return { moviesList: [], totalNumMovies: 0 }
+      return {
+        moviesList: [],
+        totalNumMovies: 0
+      }
     }
   }
 
@@ -291,13 +357,11 @@ export default class MoviesDAO {
 
       // TODO Ticket: Get Comments
       // Implement the required pipeline.
-      const pipeline = [
-        {
-          $match: {
-            _id: ObjectId(id)
-          }
+      const pipeline = [{
+        $match: {
+          _id: ObjectId(id)
         }
-      ]
+      }]
       return await movies.aggregate(pipeline).next()
     } catch (e) {
       /**
