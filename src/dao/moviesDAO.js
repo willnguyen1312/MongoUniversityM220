@@ -210,7 +210,7 @@ export default class MoviesDAO {
               },
             },
           },
-        }, ],
+        },],
         rating: [{
           $bucket: {
             groupBy: "$metacritic",
@@ -222,12 +222,12 @@ export default class MoviesDAO {
               },
             },
           },
-        }, ],
+        },],
         movies: [{
           $addFields: {
             title: "$title",
           },
-        }, ],
+        },],
       },
     }
 
@@ -247,6 +247,9 @@ export default class MoviesDAO {
       sortStage,
       // TODO Ticket: Faceted Search
       // Add the stages to queryPipeline in the correct order.
+      skipStage,
+      limitStage,
+      facetStage,
     ]
 
     try {
@@ -317,7 +320,8 @@ export default class MoviesDAO {
 
     // TODO Ticket: Paging
     // Use the cursor to only return the movies that belong on the current page
-    const displayCursor = cursor.limit(moviesPerPage)
+    // here's where paging is implemented
+    const displayCursor = cursor.skip(moviesPerPage * page).limit(moviesPerPage)
 
     try {
       const moviesList = await displayCursor.toArray()
